@@ -30,12 +30,13 @@ namespace USTC_ListMonitor
             }
             string SCKEY = File.ReadAllText(SCKEYFileName).Trim();
             wechatNotifier = new WechatNotifier(SCKEY);
-            Console.WriteLine($"SCKEY = {SCKEY}");
+            Console.WriteLine($"{DateTime.Now} | SCKEY = {SCKEY}");
 
             // Start
             while (true)
             {
                 List<string> USTCList = await GetUSTCList();
+                if (USTCList.Count == 0) continue;
                 UpdateListAndNotify(USTCList);
                 System.Threading.Thread.Sleep(15000);
             }
@@ -70,7 +71,8 @@ namespace USTC_ListMonitor
             // Get list area html
             string html = await GetUSTCListFullHTML();
             MatchCollection matches = Regex.Matches(html, @"(?<=<td class=""bt02"">)([\w\W]*?)(?=</td>)");
-            string listHTML = matches[1].Value;
+            if (matches.Count < 2) return new List<string>(); // Match failed.
+            string listHTML = matches[1].Value; // Match successed.
 
             // Get list item and build list
             List<string> list = new List<string>();
@@ -98,7 +100,7 @@ namespace USTC_ListMonitor
                         // Notify new item
                         isSendSuccess = wechatNotifier.SendNotifier(item, $"详情见官网公告（{USTCListAddress}）");
                         newCount++;
-                        Console.WriteLine($"[New] {item} (Notify Status: {isSendSuccess})");
+                        Console.WriteLine($"[New] {DateTime.Now} | {item} (Notify Status: {isSendSuccess})");
                         if (!isSendSuccess) System.Threading.Thread.Sleep(500);
                     }
                 }
@@ -109,7 +111,7 @@ namespace USTC_ListMonitor
                 CurrentList = newestList;
             else
             {
-                Console.WriteLine("No new list item");
+                Console.WriteLine($"{DateTime.Now} | No new list item");
             }
         }
     }
