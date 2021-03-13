@@ -33,10 +33,21 @@ namespace USTC_ListMonitor
             Console.WriteLine($"{DateTime.Now} | SCKEY = {SCKEY}");
 
             // Start
+            int errTime = 0;
+            bool sentErr = false;
             while (true)
             {
                 List<string> USTCList = await GetUSTCList();
-                if (USTCList.Count == 0) continue;
+                if (USTCList.Count == 0)
+                {
+                    errTime++;
+                    // Only send once every error period.
+                    if (errTime >= 10 && !sentErr) sentErr = wechatNotifier.SendNotifier("[异常] USTCLIST 获取失败", "USTC List 已连续 10 次获取失败，请检查调试！");
+                    Console.WriteLine($"[Err] {DateTime.Now} Failed to get list.");
+                    continue;
+                }
+                // Reset error send status.
+                errTime = 0; sentErr = false;
                 UpdateListAndNotify(USTCList);
                 System.Threading.Thread.Sleep(15000);
             }
